@@ -8,5 +8,5 @@ clg.playground = np.pad(ConwayGame.commonModels.Guns.GGG, ((0, 20), (0, 20))) # 
 clg.startAnimation(interval=100)
 
 clg.loopingBound = True
-clg.playground = ConwayGame.buildPlayground("bo$2bo$3o!", charset="ob$") # Support RLE from conwaylife.com
+clg.playground = np.tile(ConwayGame.buildPlayground("bo$2bo$3o!", charset="ob$"), (10, 10)) # RLE from conwaylife.com
 clg.startAnimation(interval=100)
