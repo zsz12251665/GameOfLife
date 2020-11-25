@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 
 class PrototypeGame:
     def __init__(self, playground, *, neighborhoodRange=1, aliveSwitches=[-1, -1, 0, 1, -1, -1, -1, -1, -1], loopingBound=False):
-        self.playground = (np.array(playground) > 127) * 255
+        self.playground = (np.array(playground) > np.max(playground) / 2) * 1
         self.neighborhoodRange = neighborhoodRange
         self.aliveSwitches = aliveSwitches
         self.loopingBound = loopingBound
@@ -15,30 +15,38 @@ class PrototypeGame:
 
     def countNeighourCells(self, x, y):
         n, m = self.playground.shape
-        p = self.playground / 255
         x_l, x_r = x - self.neighborhoodRange, x + self.neighborhoodRange + 1
         y_l, y_r = y - self.neighborhoodRange, y + self.neighborhoodRange + 1
         if self.loopingBound:
-            return int(np.sum([p[i % n, j % m] for i in range(x_l, x_r) for j in range(y_l, y_r)]) - p[x, y])
+            return np.sum([self.playground[i % n, j % m] for i in range(x_l, x_r) for j in range(y_l, y_r)]) - self.playground[x, y]
         else:
-            return int(np.sum(p[max(x_l, 0):min(x_r, n), max(y_l, 0):min(y_r, m)]) - p[x, y])
+            return np.sum(self.playground[max(x_l, 0):min(x_r, n), max(y_l, 0):min(y_r, m)]) - self.playground[x, y]
 
     def nextFrame(self):
         n, m = self.playground.shape
         status = np.array([[self.aliveSwitches[self.countNeighourCells(x, y)] for y in range(m)] for x in range(n)])
-        self.playground = (status == 0) * self.playground + (status == 1) * 255 + (status == -1) * 0
+        self.playground = (status == 0) * self.playground + (status == 1) * 1 + (status == -1) * 0
 
-    def startAnimation(self, *, interval=200):
+    def startAnimation(self, *, showAnim=True, interval=200, saveAs=None, frames=None):
+        def init(*args):
+            im.set_array(self.playground)
+            return im,
+
         def update(*args):
             im.set_array(self.playground)
             self.nextFrame()
             return im,
 
         fig = plt.figure()
+        plt.axis("off")
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         fig.canvas.set_window_title("Conway's Game of Life")
         im = plt.imshow(self.playground, animated=True)
-        animation.FuncAnimation(fig, update, interval=interval, blit=True)
-        plt.show()
+        anim = animation.FuncAnimation(fig, update, frames=frames, interval=interval, init_func=init, blit=True)
+        if saveAs:
+            anim.save(**saveAs)
+        if showAnim:
+            plt.show()
 
     @staticmethod
     def buildPlayground(string, *, charset="AD,"):
@@ -49,7 +57,7 @@ class PrototypeGame:
                 if "0" <= ch <= "9":
                     cnt = cnt * 10 + int(ch)
                 elif ch in charset[0:2]:
-                    res += ([255] if ch == charset[0] else [0]) * max(cnt, 1)
+                    res += [ch == charset[0]] * max(cnt, 1)
                     cnt = 0
             return res
 
